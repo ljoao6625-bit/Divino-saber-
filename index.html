@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -60,14 +59,15 @@
     "react-dom/": "https://esm.sh/react-dom@^18.2.0/",
     "react/": "https://esm.sh/react@^18.2.0/",
     "@google/genai": "https://esm.sh/@google/genai@^1.34.0",
-    "recharts": "https://esm.sh/recharts@^3.6.0",
+    "recharts": "https://esm.sh/recharts@^3.6.0?deps=react@^18.2.0,react-dom@^18.2.0",
     "pdfjs-dist": "https://esm.sh/pdfjs-dist@4.0.379",
-    "framer-motion": "https://esm.sh/framer-motion@11.0.8"
+    "framer-motion": "https://esm.sh/framer-motion@11.0.8?deps=react@^18.2.0,react-dom@^18.2.0"
   }
 }
 </script>
 </head>
 <body>
     <div id="root"></div>
+    <script type="module" src="./index.tsx"></script>
 </body>
 </html>
