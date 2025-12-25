@@ -55,7 +55,7 @@ export interface Simulado {
   rewardXP: number; // Bônus por completar o simulado
   motivationalText?: string;
   motivationalImageBase64?: string;
-  motivationalTextId?: string; // Link to the motivational text
+  motivationalTextIds?: string[]; // Link to multiple motivational texts
 }
 
 export interface Mission {
@@ -81,6 +81,7 @@ export interface UserStats {
   rank: string;
   totalQuestionsAnswered: number;
   totalCorrectAnswers: number;
+  accuracy: number;
 }
 
 export interface Module {
@@ -103,4 +104,15 @@ export interface MotivationalText {
   title: string;
   content: string;
   sourcePdf: string;
+  imageBase64?: string;
+}
+
+export interface StudyMaterial {
+  id: string;
+  title: string;
+  subject: Subject;
+  fileType: 'pdf' | 'image';
+  base64Data: string;
+  fileName: string;
+  createdAt: number;
 }

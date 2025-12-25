@@ -117,9 +117,9 @@ export const extractExamDataFromPdf = async (pages: { imageData: string }[], ful
 
   const textPrompt = {
     text: `
-    Você é um especialista absoluto em provas do IFRN. Sua missão é extrair **ABSOLUTAMENTE TODAS** as questões de uma prova em PDF com 100% de fidelidade. Forneço o texto completo extraído do documento e as imagens de cada página.
+    Você é um especialista absoluto em provas do IFRN. Sua missão é extrair **ABSOLUTAMENTE TODAS** as questões e textos de uma prova em PDF com 100% de fidelidade. Forneço o texto completo extraído do documento e as imagens de cada página.
 
-    **SUA TAREFA PRINCIPAL:** Use o texto fornecido como a fonte primária da verdade. Use as imagens para entender o layout, associar imagens às questões corretas e corrigir possíveis erros de formatação do texto extraído. A extração deve ser completa e sem edições. Se o PDF contém 40 questões, o JSON de saída deve conter 40 itens no array 'questoes'. Não omita, resuma ou altere nenhuma questão ou alternativa.
+    **SUA TAREFA PRINCIPAL:** Use o texto fornecido como a fonte primária da verdade. Use as imagens para entender o layout, associar imagens/charges às questões corretas ou aos textos motivadores, e corrigir possíveis erros de formatação. A extração deve ser completa e sem edições. Se o PDF contém 40 questões, o JSON de saída deve conter 40 itens no array 'questoes'. Não omita, resuma ou altere nada.
 
     **TEXTO COMPLETO EXTRAÍDO:**
     ---
@@ -128,15 +128,14 @@ export const extractExamDataFromPdf = async (pages: { imageData: string }[], ful
     
     **INSTRUÇÕES DE EXTRAÇÃO:** Extraia e estruture TUDO em JSON rigoroso com as seguintes partes:
     {
-      "textos_motivadores": [{"titulo": "...", "conteudo": "..."}],
+      "textos_motivadores": [{"titulo": "...", "conteudo": "...", "imageBase64": "... (string base64 da imagem/charge, se houver)"}],
       "questoes": [{"text": "...", "options": ["..."], "correctAnswerIndex": 0, "subject": "Português" ou "Matemática", "difficulty": "Fácil" ou "Médio" ou "Difícil", "usesMotivationalText": true ou false, "imageBase64": "...", "contextText": "..."}]
     }
     REGRAS CRÍTICAS E OBRIGATÓRIAS:
     - Extraia **TODAS** as questões, sem exceção.
-    - Identifique corretamente as disciplinas.
-    - Detecte textos motivadores no início. Se uma questão depender de um texto, marque "usesMotivationalText": true.
+    - Detecte textos motivadores. Se um texto motivador tiver uma imagem, charge ou gráfico, extraia-o como uma string base64 no campo "imageBase64".
+    - Se uma questão contiver uma imagem, extraia-a no "imageBase64" da questão correspondente.
     - Preserve 100% do texto original do enunciado e das alternativas.
-    - Se uma questão contiver uma imagem, extraia-a como uma string base64.
     - Retorne SOMENTE o JSON válido, aderindo estritamente ao schema.
     `
   };
@@ -158,6 +157,7 @@ export const extractExamDataFromPdf = async (pages: { imageData: string }[], ful
                 properties: {
                   titulo: { type: Type.STRING },
                   conteudo: { type: Type.STRING },
+                  imageBase64: { type: Type.STRING },
                 },
                 required: ['titulo', 'conteudo'],
               }

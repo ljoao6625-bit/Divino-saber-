@@ -20,15 +20,27 @@ const DailyChallenge: React.FC<DailyChallengeProps> = ({ questions, simulado, on
   const [isFinished, setIsFinished] = useState(false);
   const [aiExplanation, setAiExplanation] = useState<string | null>(null);
   const [loadingAi, setLoadingAi] = useState(false);
-  const [isContextModalOpen, setIsContextModalOpen] = useState(false);
   
   const [activeView, setActiveView] = useState<'question' | 'context'>('question');
-  const [motivationalText, setMotivationalText] = useState<MotivationalText | null>(null);
+  const [relevantTexts, setRelevantTexts] = useState<MotivationalText[]>([]);
 
   useEffect(() => {
-    if (simulado?.motivationalTextId) {
-      const text = motivationalTexts.find(t => t.id === simulado.motivationalTextId);
-      setMotivationalText(text || null);
+    if (simulado) {
+      if (simulado.motivationalTextIds && simulado.motivationalTextIds.length > 0) {
+        const texts = motivationalTexts.filter(t => simulado.motivationalTextIds!.includes(t.id));
+        setRelevantTexts(texts);
+      } else if (simulado.motivationalText) {
+        // Handle manually created simulados with a single text
+        setRelevantTexts([{
+          id: 'manual_text',
+          title: 'Texto de Apoio',
+          content: simulado.motivationalText,
+          imageBase64: simulado.motivationalImageBase64,
+          sourcePdf: ''
+        }]);
+      } else {
+        setRelevantTexts([]);
+      }
     }
   }, [simulado, motivationalTexts]);
 
@@ -79,6 +91,7 @@ const DailyChallenge: React.FC<DailyChallengeProps> = ({ questions, simulado, on
       setSelectedOption(null);
       setShowFeedback(false);
       setAiExplanation(null);
+      setActiveView('question');
     } else {
       setIsFinished(true);
     }
@@ -120,28 +133,28 @@ const DailyChallenge: React.FC<DailyChallengeProps> = ({ questions, simulado, on
             <button onClick={onCancel} className="text-slate-300 hover:text-red-500 transition-colors">✕</button>
             <span className="text-xs font-black text-slate-400 uppercase tracking-widest">ITEM {currentIdx + 1} / {questions.length}</span>
           </div>
-          <div className="flex items-center space-x-4">
-            {isSimulado && (simulado.motivationalText || simulado.motivationalImageBase64) && (
-                <button onClick={() => setIsContextModalOpen(true)} className="w-10 h-10 flex items-center justify-center bg-yellow-50 text-yellow-500 rounded-full text-lg">💡</button>
-            )}
-            <div className="flex items-center space-x-2 text-[10px] font-bold text-slate-500 bg-slate-100 px-3 py-1.5 rounded-full">
-              {diffConfig && <span className={`${diffConfig.color} mr-1.5`}>{diffConfig.icon}</span>}
-              <span>{currentQuestion.difficulty} (+{getPointsByDifficulty(currentQuestion.difficulty)} XP)</span>
-            </div>
+          <div className="flex items-center space-x-2 text-[10px] font-bold text-slate-500 bg-slate-100 px-3 py-1.5 rounded-full">
+            {diffConfig && <span className={`${diffConfig.color} mr-1.5`}>{diffConfig.icon}</span>}
+            <span>{currentQuestion.difficulty} (+{getPointsByDifficulty(currentQuestion.difficulty)} XP)</span>
           </div>
         </div>
         
-        {motivationalText && (
+        {relevantTexts.length > 0 && (
           <div className="flex bg-slate-100 p-1.5 rounded-full border border-slate-200/80">
             <button onClick={() => setActiveView('question')} className={`flex-1 px-6 py-3.5 rounded-full text-sm font-bold transition-all ${activeView === 'question' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-800'}`}>Questão Atual</button>
-            <button onClick={() => setActiveView('context')} className={`flex-1 px-6 py-3.5 rounded-full text-sm font-bold transition-all ${activeView === 'context' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-800'}`}>Textos de Apoio</button>
+            <button onClick={() => setActiveView('context')} className={`flex-1 px-6 py-3.5 rounded-full text-sm font-bold transition-all ${activeView === 'context' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-800'}`}>Textos Motivadores</button>
           </div>
         )}
 
-        {activeView === 'context' && motivationalText ? (
-          <div className="bg-white rounded-[2.5rem] p-10 shadow-lg border border-slate-100 space-y-6 animate-in fade-in">
-            <h3 className="text-2xl font-black text-slate-800">{motivationalText.title}</h3>
-            <p className="text-base text-slate-700 leading-relaxed whitespace-pre-wrap max-h-[60vh] overflow-y-auto">{motivationalText.content}</p>
+        {activeView === 'context' && relevantTexts.length > 0 ? (
+          <div className="bg-white rounded-[2.5rem] p-10 shadow-lg border border-slate-100 space-y-8 animate-in fade-in max-h-[70vh] overflow-y-auto">
+            {relevantTexts.map((text, index) => (
+              <div key={text.id + index} className="space-y-4 border-b border-slate-100 last:border-b-0 pb-6 last:pb-0">
+                <h3 className="text-2xl font-black text-slate-800">{text.title}</h3>
+                {text.imageBase64 && <img src={`data:image/png;base64,${text.imageBase64}`} alt={text.title} className="rounded-lg border border-slate-200" />}
+                <p className="text-base text-slate-700 leading-relaxed whitespace-pre-wrap">{text.content}</p>
+              </div>
+            ))}
           </div>
         ) : (
           <>
@@ -165,11 +178,11 @@ const DailyChallenge: React.FC<DailyChallengeProps> = ({ questions, simulado, on
                     else if (isSelected) styles = "bg-rose-50 border-rose-500 text-rose-900";
                     else styles = "bg-slate-50 opacity-40";
                   } else if (isSelected) {
-                    styles = "bg-emerald-50/50 border-emerald-400 text-emerald-900";
+                    styles = "bg-blue-50 border-blue-500";
                   }
                   return (
-                    <button key={idx} disabled={showFeedback} onClick={() => setSelectedOption(idx)} className={`p-5 rounded-2xl border text-left font-bold transition-all flex items-center space-x-4 ${styles}`}>
-                      <span className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black border-2 shrink-0 ${isSelected ? 'bg-blue-600 text-white border-transparent' : 'bg-white border-slate-200 text-slate-400'}`}>{String.fromCharCode(65 + idx)}</span>
+                    <button key={idx} disabled={showFeedback} onClick={() => setSelectedOption(idx)} className={`p-5 rounded-2xl border-2 text-left font-bold transition-all flex items-center space-x-4 ${styles}`}>
+                      <span className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black border-2 shrink-0 transition-colors ${isSelected && !showFeedback ? 'bg-blue-600 text-white border-transparent' : showFeedback && isCorrect ? 'bg-emerald-600 text-white border-transparent' : showFeedback && isSelected && !isCorrect ? 'bg-rose-600 text-white border-transparent' : 'bg-white border-slate-200 text-slate-400'}`}>{String.fromCharCode(65 + idx)}</span>
                       <span>{opt}</span>
                     </button>
                   );
@@ -185,17 +198,6 @@ const DailyChallenge: React.FC<DailyChallengeProps> = ({ questions, simulado, on
           </>
         )}
       </div>
-      
-      {isContextModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => setIsContextModalOpen(false)}>
-              <div className="bg-white rounded-3xl p-8 max-w-lg w-full space-y-4 animate-in zoom-in-95" onClick={e => e.stopPropagation()}>
-                  <h3 className="text-lg font-black text-slate-800">Contexto Estratégico</h3>
-                  {simulado?.motivationalText && <p className="text-sm text-slate-600 whitespace-pre-wrap">{simulado.motivationalText}</p>}
-                  {simulado?.motivationalImageBase64 && <img src={`data:image/png;base64,${simulado.motivationalImageBase64}`} alt="Contexto Visual" className="rounded-lg mt-4" />}
-                  <button onClick={() => setIsContextModalOpen(false)} className="w-full bg-slate-100 py-3 rounded-lg text-sm font-bold text-slate-600">Fechar</button>
-              </div>
-          </div>
-      )}
     </>
   );
 };

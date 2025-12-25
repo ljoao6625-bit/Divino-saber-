@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { UserRole, Question, User, Mission, Simulado, Module, Notification, MotivationalText } from './types';
+import { UserRole, Question, User, Mission, Simulado, Module, Notification, MotivationalText, StudyMaterial } from './types';
 import { INITIAL_QUESTIONS, INITIAL_MISSIONS, INITIAL_MODULES, ADMIN_CREDENTIALS, WHITELISTED_STUDENTS, INITIAL_STUDENTS, INITIAL_SIMULADOS } from './constants';
 import useLocalStorage from './hooks/useLocalStorage';
 import Layout from './components/Layout';
@@ -30,6 +30,7 @@ const App: React.FC = () => {
   const [globalMission, setGlobalMission] = useLocalStorage<Mission | null>('ds-globalMission', null);
   const [notifications, setNotifications] = useLocalStorage<Notification[]>('ds-notifications', []);
   const [motivationalTexts, setMotivationalTexts] = useLocalStorage<MotivationalText[]>('ds-motivational-texts', []);
+  const [studyMaterials, setStudyMaterials] = useLocalStorage<StudyMaterial[]>('ds-study-materials', []);
 
   useEffect(() => {
     if (currentUser?.email === ADMIN_CREDENTIALS.email) {
@@ -40,7 +41,7 @@ const App: React.FC = () => {
   }, [currentUser]);
 
   // Handlers de Sincronização do Mestre
-  const handleAddQuestion = (q: Question) => setQuestions(prev => [q, ...prev]);
+  const handleAddQuestions = (newQuestions: Question[]) => setQuestions(prev => [...newQuestions, ...prev]);
   
   const handleAddSimulado = (s: Simulado) => {
     setSimulados(prev => [s, ...prev]);
@@ -77,6 +78,11 @@ const App: React.FC = () => {
     return text.id;
   };
 
+  const handleAddStudyMaterial = (material: StudyMaterial) => {
+    setStudyMaterials(prev => [material, ...prev]);
+    alert(`Material de estudo "${material.title}" adicionado com sucesso!`);
+  };
+
   const startChallenge = (selectedQuestions?: Question[], simulado?: Simulado, mission?: Mission) => {
     const available = selectedQuestions && selectedQuestions.length > 0 ? selectedQuestions : questions;
     if (available.length === 0) {
@@ -106,6 +112,7 @@ const App: React.FC = () => {
       const totalAnsweredInChallenge = activeMissionQuestions.length;
       const newTotalAnswered = (currentUser.stats.totalQuestionsAnswered || 0) + totalAnsweredInChallenge;
       const newTotalCorrect = (currentUser.stats.totalCorrectAnswers || 0) + correctCount;
+      const newAccuracy = newTotalAnswered > 0 ? Math.round((newTotalCorrect / newTotalAnswered) * 100) : 0;
 
       const newStats: User['stats'] = {
         ...currentUser.stats,
@@ -113,6 +120,7 @@ const App: React.FC = () => {
         streak: currentUser.stats.streak + 1,
         totalQuestionsAnswered: newTotalAnswered,
         totalCorrectAnswers: newTotalCorrect,
+        accuracy: newAccuracy,
       };
       
       const updatedUser = { ...currentUser, stats: newStats };
@@ -177,13 +185,14 @@ const App: React.FC = () => {
               missions={missions}
               students={students}
               whitelistedStudents={whitelistedStudents}
-              onAddQuestion={handleAddQuestion}
+              onAddQuestions={handleAddQuestions}
               onAddSimulado={handleAddSimulado}
               onAddMission={handleAddMission}
               onSetGlobalMission={handleSetGlobalMission}
               onUpdateModule={handleUpdateModule}
               onAddWhitelistedStudent={handleAddWhitelistedStudent}
               onAddMotivationalText={handleAddMotivationalText}
+              onAddStudyMaterial={handleAddStudyMaterial}
             />
           );
         case 'terminal':
@@ -191,7 +200,7 @@ const App: React.FC = () => {
             <TeacherTerminal students={students} questions={questions} />
           );
         default:
-          return <AdminDashboard modules={modules} questions={questions} simulados={simulados} missions={missions} students={students} whitelistedStudents={whitelistedStudents} onAddQuestion={handleAddQuestion} onAddSimulado={handleAddSimulado} onAddMission={handleAddMission} onSetGlobalMission={handleSetGlobalMission} onUpdateModule={handleUpdateModule} onAddWhitelistedStudent={handleAddWhitelistedStudent} onAddMotivationalText={handleAddMotivationalText} />;
+          return <AdminDashboard modules={modules} questions={questions} simulados={simulados} missions={missions} students={students} whitelistedStudents={whitelistedStudents} onAddQuestions={handleAddQuestions} onAddSimulado={handleAddSimulado} onAddMission={handleAddMission} onSetGlobalMission={handleSetGlobalMission} onUpdateModule={handleUpdateModule} onAddWhitelistedStudent={handleAddWhitelistedStudent} onAddMotivationalText={handleAddMotivationalText} onAddStudyMaterial={handleAddStudyMaterial} />;
       }
     }
 
@@ -201,7 +210,7 @@ const App: React.FC = () => {
       case 'home':
         return <StudentHome stats={currentUser.stats!} onStartChallenge={(qs, mission) => startChallenge(qs, undefined, mission)} globalMission={globalMission} questions={questions} notifications={unreadNotifications} onDismissNotification={handleDismissNotification} />;
       case 'missao':
-        return <Missions onStartPractice={(qs, mission) => startChallenge(qs, undefined, mission)} questions={questions} missions={missions} globalMission={globalMission} modules={modules} />;
+        return <Missions onStartPractice={(qs, mission) => startChallenge(qs, undefined, mission)} questions={questions} missions={missions} globalMission={globalMission} modules={modules} studyMaterials={studyMaterials} />;
       case 'simulados':
         const sortedSimulados = [...simulados].sort((a, b) => b.createdAt - a.createdAt);
         return (

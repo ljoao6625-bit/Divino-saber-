@@ -1,6 +1,6 @@
 
 import React, { useState, useRef } from 'react';
-import { Question, Mission, Module } from '../types';
+import { Question, Mission, Module, StudyMaterial } from '../types';
 import { decodeAudioToBuffer } from '../services/geminiService';
 
 interface MissionsProps {
@@ -9,10 +9,11 @@ interface MissionsProps {
   missions: Mission[];
   globalMission: Mission | null;
   modules: Module[];
+  studyMaterials: StudyMaterial[];
 }
 
-const Missions: React.FC<MissionsProps> = ({ onStartPractice, questions, missions, globalMission, modules }) => {
-  const [activeSubTab, setActiveSubTab] = useState<'portugues' | 'matematica' | 'resumo' | 'leitura'>('portugues');
+const Missions: React.FC<MissionsProps> = ({ onStartPractice, questions, missions, globalMission, modules, studyMaterials }) => {
+  const [activeSubTab, setActiveSubTab] = useState<'portugues' | 'matematica' | 'audio' | 'resumos'>('portugues');
   const audioCtxRef = useRef<AudioContext | null>(null);
   const [isPlaying, setIsPlaying] = useState<string | null>(null); // Store mission ID
   const audioSourceRef = useRef<AudioBufferSourceNode | null>(null);
@@ -92,17 +93,25 @@ const Missions: React.FC<MissionsProps> = ({ onStartPractice, questions, mission
         if (filteredMissions.length === 0) return <p className="text-center text-slate-500 py-10">Nenhuma missão de {subject} disponível no momento.</p>;
         return <div className="space-y-4">{filteredMissions.map(m => <MissionCard key={m.id} mission={m} />)}</div>;
       }
-      case 'resumo': {
+      case 'audio': {
         const audioMissions = missions.filter(m => m.type === 'audio' && m.id !== globalMission?.id);
         if (audioMissions.length === 0) return <p className="text-center text-slate-500 py-10">Nenhuma missão de áudio disponível no momento.</p>;
         return <div className="space-y-4">{audioMissions.map(m => <MissionCard key={m.id} mission={m} />)}</div>;
       }
-      case 'leitura':
-        if (modules.length === 0) return <p className="text-center text-slate-500 py-10">Nenhum módulo de leitura sincronizado pelo Mestre.</p>;
-        return <div className="space-y-4">{modules.map(m => (
-          <div key={m.id} className="ds-card p-8 border-l-4 border-l-blue-600">
-            <h4 className="text-xl font-bold">{m.name}</h4>
-            <p className="text-slate-500 mt-2">{m.summary || "Aguardando sincronização do Mestre..."}</p>
+      case 'resumos':
+        if (studyMaterials.length === 0) return <p className="text-center text-slate-500 py-10">Nenhum resumo sincronizado pelo Mestre.</p>;
+        return <div className="space-y-4">{studyMaterials.map(m => (
+          <div key={m.id} className="ds-card p-6 flex justify-between items-center hover:shadow-lg transition-shadow">
+            <div className="flex items-center space-x-5">
+              <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center text-2xl">{m.fileType === 'pdf' ? '📄' : '🖼️'}</div>
+              <div>
+                <h4 className="text-lg font-black text-slate-800">{m.title}</h4>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Material de Apoio de {m.subject}</p>
+              </div>
+            </div>
+            <a href={`data:${m.fileType === 'pdf' ? 'application/pdf' : 'image/png'};base64,${m.base64Data}`} download={m.fileName} className="bg-slate-900 text-white px-8 py-4 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-blue-600 transition-colors">
+              Visualizar
+            </a>
           </div>
         ))}</div>;
       default:
@@ -138,7 +147,7 @@ const Missions: React.FC<MissionsProps> = ({ onStartPractice, questions, mission
       )}
 
       <div className="flex bg-slate-100/80 p-1.5 rounded-full border border-slate-200/80">
-        {[{id: 'portugues', label: 'Missão Português'}, {id: 'matematica', label: 'Missão Matemática'}, {id: 'resumo', label: 'Missão Resumo'}, {id: 'leitura', label: 'Missão Leitura'}].map(tab => (
+        {[{id: 'portugues', label: 'Português'}, {id: 'matematica', label: 'Matemática'}, {id: 'audio', label: 'Missões de Áudio'}, {id: 'resumos', label: 'Resumos'}].map(tab => (
            <button key={tab.id} onClick={() => setActiveSubTab(tab.id as any)} className={`flex-1 px-6 py-3.5 rounded-full text-sm font-bold transition-all ${activeSubTab === tab.id ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-800'}`}>{tab.label}</button>
         ))}
       </div>

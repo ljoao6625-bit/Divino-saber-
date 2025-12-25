@@ -45,7 +45,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, curr
     missao: 'Central de Missões',
     simulados: 'Simulados Oficiais',
     ranking: 'Ranking Global',
-    central: 'Master_center',
+    central: 'Painel de Coordenação',
     terminal: 'Terminal do Mestre'
   };
   
