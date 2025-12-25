@@ -1,0 +1,9 @@
+{
+  "name": "Copy of Divino Saber Elite",
+  "description": "Plataforma preparatória IFRN de alta performance com IA de última geração.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation"
+  ]
+}
